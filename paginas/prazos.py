@@ -64,12 +64,12 @@ st.page_link("https://www.tjba.jus.br/portal/calendario/", label="Consulte o cal
 br_holidays = holidays.BR(state='BA')
 
 disponibilizacao_date = st.date_input(
-        "Data da disponibilização no Diário",
+        "Data da disponibilização no Diário Eletrônico:",
         datetime.date.today(),
         format="DD/MM/YYYY"
     )
 
-days = st.number_input("Número de Dias", min_value=1, value=15)
+days = st.number_input("Número de Dias:", min_value=1, value=15)
 
 # Inicializar variáveis de estado
 if 'calculated' not in st.session_state:
@@ -77,7 +77,7 @@ if 'calculated' not in st.session_state:
 if 'df' not in st.session_state:
     st.session_state.df = None
 
-if st.button("Calcular"):
+if st.button("Calcular!"):
     publicacao_date, start_date, end_date = calculate_deadline(disponibilizacao_date, days, br_holidays)
     st.success(f"""
     Data da Disponibilização no DJE: {disponibilizacao_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(disponibilizacao_date)}\n
@@ -86,7 +86,7 @@ if st.button("Calcular"):
     ### Data Final: {end_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(end_date)}
     """)
 
-    st.subheader("Detalhes dos Dias Úteis")
+    st.subheader("Detalhes dos Dias Úteis:")
     date_range = pd.date_range(start=disponibilizacao_date, end=end_date)
     details = []
     day_count = 0
@@ -98,9 +98,9 @@ if st.button("Calcular"):
         else:
             day_of_term = "-"
         details.append({
-            "Data": date.strftime('%d/%m/%Y') + " - " + get_day_name_pt_br(date),
-            "Dia do Prazo": day_of_term,
-            "Evento": event
+            "Data:": date.strftime('%d/%m/%Y') + " - " + get_day_name_pt_br(date),
+            "Dia do Prazo:": day_of_term,
+            "Evento:": event
         })
 
     st.session_state.df = pd.DataFrame(details)
@@ -122,6 +122,6 @@ if st.session_state.calculated:
     )
 
     # Botão para mostrar a tabela original em um "pop-up"
-    if st.button("Tabela sem formatação"):
-        with st.expander("Detalhes dos Dias Úteis", expanded=True):
+    if st.button("Tabela sem formatação:"):
+        with st.expander("Detalhes dos Dias Úteis:", expanded=True):
             st.table(st.session_state.df)

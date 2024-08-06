@@ -20,7 +20,7 @@ prazos = st.Page(
 
 st.set_page_config(
     page_title="Advogando!",
-    page_icon=":material/interactive_space:",
+    page_icon="🧑‍⚖️",
 )
 
 
