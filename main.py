@@ -9,18 +9,18 @@ index = st.Page(
 calculadora_honorarios = st.Page(
     "paginas/honorarios.py",
     title="Calculadora de Honorários!",
-    icon=":material/help:"
+    icon=":material/calculate:"
 )
 
 prazos = st.Page(
     "paginas/prazos.py", 
-    title="Calculadora de Prazos!", 
-    icon=":material/bug_report:"
+    title="Calculadora de Prazos! Bahia.", 
+    icon=":material/more_time:"
 )
 
 st.set_page_config(
     page_title="Advogando!",
-    page_icon="👋",
+    page_icon=":material/interactive_space:",
 )
 
 

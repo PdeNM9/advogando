@@ -58,7 +58,7 @@ def get_day_name_pt_br(date):
 
 
 st.image("images/Bandeira_da_Bahia.svg", width=50)
-st.title("Calculadora de Prazos: Bahia!")
+st.title("Calculadora de Prazos: Salvador - Bahia!")
 st.page_link("https://www.tjba.jus.br/portal/calendario/", label="Consulte o calendário oficial CLICANDO AQUI!", icon="📅")
 
 br_holidays = holidays.BR(state='BA')
@@ -71,37 +71,57 @@ disponibilizacao_date = st.date_input(
 
 days = st.number_input("Número de Dias", min_value=1, value=15)
 
+# Inicializar variáveis de estado
+if 'calculated' not in st.session_state:
+    st.session_state.calculated = False
+if 'df' not in st.session_state:
+    st.session_state.df = None
+
 if st.button("Calcular"):
-        publicacao_date, start_date, end_date = calculate_deadline(disponibilizacao_date, days, br_holidays)
+    publicacao_date, start_date, end_date = calculate_deadline(disponibilizacao_date, days, br_holidays)
+    st.success(f"""
+    Data da Disponibilização no DJE: {disponibilizacao_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(disponibilizacao_date)}\n
+    Data da Publicação: {publicacao_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(publicacao_date)}\n
+    Data Inicial do Prazo: {start_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(start_date)}\n
+    ### Data Final: {end_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(end_date)}
+    """)
 
-        st.success(f"""
-        Data da Disponibilização no DJE: {disponibilizacao_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(disponibilizacao_date)}\n
-        Data da Publicação: {publicacao_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(publicacao_date)}\n
-        Data Inicial do Prazo: {start_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(start_date)}\n
-        Data Final: {end_date.strftime('%d/%m/%Y')} - {get_day_name_pt_br(end_date)}\n
-        """)
+    st.subheader("Detalhes dos Dias Úteis")
+    date_range = pd.date_range(start=disponibilizacao_date, end=end_date)
+    details = []
+    day_count = 0
+    for date in date_range:
+        event = get_event_description(date, br_holidays, disponibilizacao_date, publicacao_date)
+        if is_working_day(date.date(), br_holidays) and date.date() >= start_date:
+            day_count += 1
+            day_of_term = str(day_count)
+        else:
+            day_of_term = "-"
+        details.append({
+            "Data": date.strftime('%d/%m/%Y') + " - " + get_day_name_pt_br(date),
+            "Dia do Prazo": day_of_term,
+            "Evento": event
+        })
 
-        st.subheader("Detalhes dos Dias Úteis")
+    st.session_state.df = pd.DataFrame(details)
+    st.session_state.calculated = True
 
-        date_range = pd.date_range(start=disponibilizacao_date, end=end_date)
-        details = []
-        day_count = 0
+# Função para aplicar estilo condicional
+def highlight_rows(row):
+    if row['Evento'] == 'Dia Útil':
+        return ['background-color: #90EE90'] * len(row)
+    else:
+        return ['background-color: #FFFFE0'] * len(row)
 
-        for date in date_range:
-            event = get_event_description(date, br_holidays, disponibilizacao_date, publicacao_date)
+# Exibir a tabela colorida se os cálculos foram realizados
+if st.session_state.calculated:
+    st.dataframe(
+        st.session_state.df.style.apply(highlight_rows, axis=1),
+        width=700,
+        height=500
+    )
 
-            if is_working_day(date.date(), br_holidays) and date.date() >= start_date:
-                day_count += 1
-                day_of_term = str(day_count)
-            else:
-                day_of_term = "-"
-
-            details.append({
-                "Data": date.strftime('%d/%m/%Y') + " - " + get_day_name_pt_br(date),
-                "Dia do Prazo": day_of_term,
-                "Evento": event
-            })
-
-        df = pd.DataFrame(details)
-        st.table(df)
-        
+    # Botão para mostrar a tabela original em um "pop-up"
+    if st.button("Tabela sem formatação"):
+        with st.expander("Detalhes dos Dias Úteis", expanded=True):
+            st.table(st.session_state.df)
