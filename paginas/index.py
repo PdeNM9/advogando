@@ -19,6 +19,7 @@ Não perca prazos importantes! Com a **Calculadora de Prazos Processuais**, voc�
 * **Facilidade de uso:** Interface amigável e intuitiva, sem necessidade de habilidades técnicas avançadas. 
 
 Explore nossas ferramentas e descubra como o **Advogando** pode simplificar sua rotina jurídica. 
-Estamos aqui para ajudar você a focar no que realmente importa: o sucesso de seus clientes."""
+Estamos aqui para ajudar você a focar no que realmente importa: o sucesso de seus clientes.
+  """
   )
 

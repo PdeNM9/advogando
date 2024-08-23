@@ -108,7 +108,7 @@ if st.button("Calcular!"):
 
 # Função para aplicar estilo condicional
 def highlight_rows(row):
-    if row['Evento'] == 'Dia Útil':
+    if row['Evento:'] == 'Dia Útil':
         return ['background-color: #90EE90'] * len(row)
     else:
         return ['background-color: #FFFFE0'] * len(row)
