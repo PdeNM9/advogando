@@ -35,10 +35,9 @@ def docx_to_pdf(docx_file):
     return pdf_buffer
 
 st.title("📄 Conversor de DOC para PDF")
-st.write("Faça upload de um arquivo DOCX para gerar automaticamente um PDF")
 
 uploaded_file = st.file_uploader(
-    "Escolha o arquivo DOCX",
+    "Faça upload de um arquivo DOCX para gerar automaticamente um PDF:",
     type=["docx"],
     help="Faça upload de um documento do Microsoft Word (.docx)"
 )
