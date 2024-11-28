@@ -20,7 +20,7 @@ prazos = st.Page(
 
 pdf = st.Page(
     "paginas/pdf.py", 
-    title="Texto para PDF.", 
+    title="Tudo para PDF.", 
     icon=":material/picture_as_pdf:"
 )
 
