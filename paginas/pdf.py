@@ -1,7 +1,7 @@
 import streamlit as st
 from docx import Document
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 import io
 from PIL import Image as PilImage
