@@ -18,12 +18,18 @@ prazos = st.Page(
     icon=":material/more_time:"
 )
 
+pdf = st.Page(
+    "paginas/pdf.py", 
+    title="Texto para PDF.", 
+    icon=":material/picture_as_pdf:"
+)
+
 st.set_page_config(
     page_title="Advogando!",
     page_icon="🧑‍⚖️",
 )
 
 
-pg = st.navigation([index, calculadora_honorarios, prazos])
+pg = st.navigation([index, calculadora_honorarios, prazos, pdf])
 
 pg.run()
