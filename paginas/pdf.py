@@ -4,6 +4,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet
 import io
+from PIL import Image as PilImage
 
 def docx_to_pdf(docx_file):
     doc = Document(docx_file)
@@ -28,12 +29,31 @@ def txt_to_pdf(txt_file):
     return pdf_buffer
 
 def image_to_pdf(image_file):
+    # Tamanho da página PDF (letter)
+    page_width, page_height = letter
+
+    # Carrega a imagem usando Pillow
+    pil_image = PilImage.open(image_file)
+    img_width, img_height = pil_image.size  # Obtém as dimensões originais da imagem
+
+    # Ajusta as dimensões para caber na página PDF
+    scale_factor = min(page_width / img_width, page_height / img_height)
+    img_width_pts = img_width * scale_factor
+    img_height_pts = img_height * scale_factor
+
+    # Cria o PDF com o tamanho da página padrão
     pdf_buffer = io.BytesIO()
     doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-    img = Image(image_file, width=400, height=300)  # Ajuste as dimensões conforme necessário
+
+    # Adiciona a imagem redimensionada ao PDF
+    img = Image(image_file, width=img_width_pts, height=img_height_pts)
     doc_pdf.build([img])
+
+    # Retorna o buffer do PDF
     pdf_buffer.seek(0)
     return pdf_buffer
+
+
 
 st.title("📄 Conversor Universal para PDF")
 
