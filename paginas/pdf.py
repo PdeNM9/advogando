@@ -1,7 +1,7 @@
 import streamlit as st
 from docx import Document
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Frame
 from reportlab.lib.styles import getSampleStyleSheet
 import io
 from PIL import Image as PilImage
@@ -29,6 +29,8 @@ def txt_to_pdf(txt_file):
     return pdf_buffer
 
 
+from reportlab.lib.units import inch
+
 def image_to_pdf(image_file):
     # Tamanho da página PDF (letter)
     page_width, page_height = letter
@@ -37,23 +39,34 @@ def image_to_pdf(image_file):
     pil_image = PilImage.open(image_file)
     img_width, img_height = pil_image.size  # Dimensões originais em pixels
 
-    # Converte as dimensões da imagem para pontos (1 ponto = 1/72 polegadas)
+    # Converte as dimensões para pontos (1 ponto = 1/72 polegadas)
     img_width_pts = img_width * 72 / pil_image.info.get("dpi", (72, 72))[0]  # Padrão 72 DPI
     img_height_pts = img_height * 72 / pil_image.info.get("dpi", (72, 72))[1]
 
-    # Redimensiona a imagem para caber dentro da página, se necessário
-    if img_width_pts > page_width or img_height_pts > page_height:
-        scale_factor = min(page_width / img_width_pts, page_height / img_height_pts)
-        img_width_pts *= scale_factor
-        img_height_pts *= scale_factor
+    # Ajusta as dimensões da imagem para caber na página
+    scale_factor = min(page_width / img_width_pts, page_height / img_height_pts)
+    img_width_pts *= scale_factor
+    img_height_pts *= scale_factor
 
-    # Cria o PDF
+    # Buffer para criar o PDF
     pdf_buffer = io.BytesIO()
+
+    # Criação do PDF
     doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+
+    # Configura um frame centralizado para evitar cortes
+    frame_x = (page_width - img_width_pts) / 2  # Centraliza horizontalmente
+    frame_y = (page_height - img_height_pts) / 2  # Centraliza verticalmente
 
     # Adiciona a imagem redimensionada ao PDF
     img = Image(image_file, width=img_width_pts, height=img_height_pts)
-    doc_pdf.build([img])
+
+    # Usa o frame para evitar erros de dimensionamento
+    frame = Frame(frame_x, frame_y, img_width_pts, img_height_pts, showBoundary=0)
+    frame.addFromList([img], doc_pdf.canv)
+
+    # Constrói o documento PDF
+    doc_pdf.build([])
 
     # Retorna o buffer do PDF
     pdf_buffer.seek(0)
