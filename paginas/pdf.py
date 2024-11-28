@@ -1,10 +1,10 @@
 import streamlit as st
 from docx import Document
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet
 import io
-from PIL import Image as PilImage
+
 
 def docx_to_pdf(docx_file):
     doc = Document(docx_file)
@@ -29,49 +29,11 @@ def txt_to_pdf(txt_file):
     return pdf_buffer
 
 
-from reportlab.lib.units import inch
-
 def image_to_pdf(image_file):
-    # Tamanho da página PDF (letter)
-    page_width, page_height = letter
-
-    # Carrega a imagem usando Pillow
-    pil_image = PilImage.open(image_file)
-    img_width, img_height = pil_image.size  # Dimensões originais em pixels
-
-    # Converte as dimensões da imagem para pontos (1 ponto = 1/72 polegadas)
-    dpi = pil_image.info.get("dpi", (72, 72))
-    img_width_pts = img_width * 72 / dpi[0]  # Largura em pontos
-    img_height_pts = img_height * 72 / dpi[1]  # Altura em pontos
-
-    # Redimensiona a imagem para caber dentro da página
-    if img_width_pts > page_width or img_height_pts > page_height:
-        scale_factor = min(page_width / img_width_pts, page_height / img_height_pts)
-        img_width_pts *= scale_factor
-        img_height_pts *= scale_factor
-
-    # Cria o buffer do PDF
     pdf_buffer = io.BytesIO()
-
-    # Configuração do documento
     doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-
-    # Cria a imagem com dimensões ajustadas
-    img = Image(image_file, width=img_width_pts, height=img_height_pts)
-
-    # Espaçamento para centralizar verticalmente (se necessário)
-    vertical_space = (page_height - img_height_pts) / 2
-
-    # Elementos do PDF
-    elements = [
-        Spacer(1, vertical_space),  # Espaço antes da imagem
-        img,  # Imagem ajustada
-    ]
-
-    # Constrói o PDF
-    doc_pdf.build(elements)
-
-    # Retorna o buffer do PDF
+    img = Image(image_file, width=400, height=300)  # Ajuste as dimensões conforme necessário
+    doc_pdf.build([img])
     pdf_buffer.seek(0)
     return pdf_buffer
 
