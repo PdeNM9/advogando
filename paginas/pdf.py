@@ -28,20 +28,26 @@ def txt_to_pdf(txt_file):
     pdf_buffer.seek(0)
     return pdf_buffer
 
+
 def image_to_pdf(image_file):
     # Tamanho da página PDF (letter)
     page_width, page_height = letter
 
     # Carrega a imagem usando Pillow
     pil_image = PilImage.open(image_file)
-    img_width, img_height = pil_image.size  # Obtém as dimensões originais da imagem
+    img_width, img_height = pil_image.size  # Dimensões originais em pixels
 
-    # Ajusta as dimensões para caber na página PDF
-    scale_factor = min(page_width / img_width, page_height / img_height)
-    img_width_pts = img_width * scale_factor
-    img_height_pts = img_height * scale_factor
+    # Converte as dimensões da imagem para pontos (1 ponto = 1/72 polegadas)
+    img_width_pts = img_width * 72 / pil_image.info.get("dpi", (72, 72))[0]  # Padrão 72 DPI
+    img_height_pts = img_height * 72 / pil_image.info.get("dpi", (72, 72))[1]
 
-    # Cria o PDF com o tamanho da página padrão
+    # Redimensiona a imagem para caber dentro da página, se necessário
+    if img_width_pts > page_width or img_height_pts > page_height:
+        scale_factor = min(page_width / img_width_pts, page_height / img_height_pts)
+        img_width_pts *= scale_factor
+        img_height_pts *= scale_factor
+
+    # Cria o PDF
     pdf_buffer = io.BytesIO()
     doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
 
