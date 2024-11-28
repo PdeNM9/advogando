@@ -1,60 +1,64 @@
 import streamlit as st
 from docx import Document
-from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
 import io
 
 def docx_to_pdf(docx_file):
-    # Read the DOCX file
+    # Lê o arquivo DOCX
     doc = Document(docx_file)
 
-    # Create a PDF buffer
+    # Cria um buffer para o PDF
     pdf_buffer = io.BytesIO()
-    pdf = canvas.Canvas(pdf_buffer)
+    doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
 
-    # Extract text and write to PDF
-    y_position = 800  # Start from top of page
+    # Obtém o estilo padrão para o texto
+    styles = getSampleStyleSheet()
+    style = styles['Normal']
+
+    # Lista para armazenar os elementos do PDF
+    elements = []
+
+    # Adiciona cada parágrafo do DOCX ao PDF
     for paragraph in doc.paragraphs:
-        if y_position <= 50:  # Check if we need a new page
-            pdf.showPage()
-            y_position = 800
+        text = paragraph.text.strip()
+        if text:  # Processa apenas parágrafos não vazios
+            para = Paragraph(text, style)
+            elements.append(para)
 
-        text = paragraph.text
-        if text.strip():  # Only process non-empty paragraphs
-            pdf.drawString(50, y_position, text)
-            y_position -= 20  # Move down for next line
+    # Constrói o PDF
+    doc_pdf.build(elements)
 
-    pdf.save()
+    # Retorna o buffer do PDF
     pdf_buffer.seek(0)
     return pdf_buffer
 
-
 st.title("📄 Conversor de DOC para PDF")
-st.write("Upload um arquivo DOCX e converta para PDF")
+st.write("Faça upload de um arquivo DOCX para gerar automaticamente um PDF")
 
 uploaded_file = st.file_uploader(
-        "Escolha o arquivo DOCX",
-        type=["docx"],
-        help="Upload a Microsoft Word document (.docx)"
-    )
+    "Escolha o arquivo DOCX",
+    type=["docx"],
+    help="Faça upload de um documento do Microsoft Word (.docx)"
+)
 
 if uploaded_file is not None:
-    st.info("File uploaded successfully!")
+    st.info("Arquivo carregado com sucesso! Gerando PDF...")
 
-    if st.button("Convert to PDF"):
-        try:
-            with st.spinner("Converting..."):
-                    # Convert the file
-                    pdf_buffer = docx_to_pdf(uploaded_file)
+    try:
+        with st.spinner("Convertendo..."):
+            # Converte o arquivo
+            pdf_buffer = docx_to_pdf(uploaded_file)
 
-                    # Create download button
-                    st.download_button(
-                        label="📥 Download PDF",
-                        data=pdf_buffer,
-                        file_name=f"{uploaded_file.name.rsplit('.', 1)[0]}.pdf",
-                        mime="application/pdf"
-                    )
-            st.success("Conversion completed! Click the button above to download your PDF.")
-
-        except Exception as e:
-            st.error(f"An error occurred during conversion: {str(e)}")
-            st.write("Please make sure you've uploaded a valid DOCX file and try again.")
+        # Exibe o botão de download assim que o PDF é gerado
+        st.download_button(
+            label="📥 Baixar PDF",
+            data=pdf_buffer,
+            file_name=f"{uploaded_file.name.rsplit('.', 1)[0]}.pdf",
+            mime="application/pdf"
+        )
+        st.success("PDF gerado com sucesso! Clique no botão acima para baixá-lo.")
+    except Exception as e:
+        st.error(f"Ocorreu um erro durante a conversão: {str(e)}")
+        st.write("Certifique-se de ter enviado um arquivo DOCX válido e tente novamente.")
