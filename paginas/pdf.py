@@ -1,72 +1,66 @@
-import streamlit as st
 import io
-from docx2html import convert
-from weasyprint import HTML
-import base64
-import imghdr
+from docx import Document
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+import os
 
-def docx_to_pdf(docx_bytes):
-    # Convert DOCX to HTML with embedded images
-    html_content = convert(docx_bytes)
-    # Convert HTML to PDF
+# Function to extract text and images from DOCX
+def extract_docx_content(docx_file):
+    doc = Document(docx_file)
+    content = []
+    # Extract images and save them temporarily
+    for rel in doc.part.relationships:
+        if "image" in rel.type:
+            image = rel._target
+            image_bytes = image.blob
+            image_path = f"temp_image_{len(content)}.png"
+            with open(image_path, "wb") as f:
+                f.write(image_bytes)
+            content.append(('image', image_path))
+    # Extract text from paragraphs
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        if text:
+            content.append(('text', text))
+    return content
+
+# Function to create PDF from content
+def create_pdf(content, pdf_path):
+    pdf = SimpleDocTemplate(pdf_path, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+    for item in content:
+        if item[0] == 'text':
+            p = Paragraph(item[1], styles['Normal'])
+            story.append(p)
+            story.append(Spacer(1, 12))
+        elif item[0] == 'image':
+            img = Image(item[1])
+            # Scale image to fit within the page width
+            img_width, img_height = img._width, img._height
+            if img_width > letter[0]:
+                ratio = letter[0] / img_width
+                img._width = letter[0]
+                img._height = img_height * ratio
+            story.append(img)
+            story.append(Spacer(1, 12))
+    pdf.build(story)
+    # Clean up temporary image files
+    for item in content:
+        if item[0] == 'image':
+            os.remove(item[1])
+
+# Main function to handle file upload and conversion
+def main():
+    # Assume 'uploaded_file' is the DOCX file from Streamlit file uploader
+    # For demonstration, use a sample DOCX file
+    uploaded_file = "sample.docx"
+    content = extract_docx_content(uploaded_file)
     pdf_buffer = io.BytesIO()
-    HTML(string=html_content).write_pdf(pdf_buffer)
-    pdf_buffer.seek(0)
-    return pdf_buffer
+    create_pdf(content, pdf_buffer)
+    # In Streamlit, use pdf_buffer to provide the PDF for download
+    # st.download_button(...)
 
-def txt_to_pdf(txt_bytes):
-    # Read text and create HTML content
-    text = txt_bytes.decode("utf-8")
-    html_content = f"<html><body><pre>{text}</pre></body></html>"
-    # Convert HTML to PDF
-    pdf_buffer = io.BytesIO()
-    HTML(string=html_content).write_pdf(pdf_buffer)
-    pdf_buffer.seek(0)
-    return pdf_buffer
-
-def image_to_pdf(image_bytes):
-    # Detect image type
-    img_type = imghdr.what(None, h=image_bytes)
-    if img_type not in ['jpeg', 'png']:
-        raise ValueError("Unsupported image type.")
-    # Read image and embed as base64 in HTML
-    img_data = base64.b64encode(image_bytes).decode("utf-8")
-    # Create HTML content with correct MIME type
-    mime_type = f"image/{img_type}"
-    html_content = f"<html><body><img src='data:{mime_type};base64,{img_data}'></body></html>"
-    # Convert HTML to PDF
-    pdf_buffer = io.BytesIO()
-    HTML(string=html_content).write_pdf(pdf_buffer)
-    pdf_buffer.seek(0)
-    return pdf_buffer
-
-st.title("📄 Universal PDF Converter")
-uploaded_file = st.file_uploader(
-    "Upload a file to convert to PDF:",
-    type=["docx", "txt", "jpg", "png"],
-    help="Supports DOCX, TXT, JPG, and PNG files."
-)
-
-if uploaded_file is not None:
-    st.info("File uploaded successfully! Generating PDF...")
-    try:
-        with st.spinner("Converting..."):
-            file_type = uploaded_file.type
-            if file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                pdf_buffer = docx_to_pdf(uploaded_file.read())
-            elif file_type == "text/plain":
-                pdf_buffer = txt_to_pdf(uploaded_file.read())
-            elif file_type in ["image/jpeg", "image/png"]:
-                pdf_buffer = image_to_pdf(uploaded_file.read())
-            else:
-                st.error("Unsupported file type.")
-                st.stop()
-        st.download_button(
-            label="📥 Download PDF",
-            data=pdf_buffer,
-            file_name=f"{uploaded_file.name.rsplit('.', 1)[0]}.pdf",
-            mime="application/pdf"
-        )
-        st.success("PDF generated successfully! Click above to download.")
-    except Exception as e:
-        st.error(f"An error occurred during conversion: {str(e)}")
+if __name__ == "__main__":
+    main()
