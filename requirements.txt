@@ -3,3 +3,4 @@ num2words==0.5.13
 holidays==0.53
 python-docx==1.1.0
 reportlab==4.1.0
+docx2pdf==0.1.8
