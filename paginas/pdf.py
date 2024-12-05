@@ -1,61 +1,66 @@
-import streamlit as st
+import io
 from docx import Document
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-import io
-def docx_to_pdf(docx_file):
+import os
+
+# Function to extract text and images from DOCX
+def extract_docx_content(docx_file):
     doc = Document(docx_file)
-    pdf_buffer = io.BytesIO()
-    doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+    content = []
+    # Extract images and save them temporarily
+    for rel in doc.part.relationships:
+        if "image" in rel.type:
+            image = rel._target
+            image_bytes = image.blob
+            image_path = f"temp_image_{len(content)}.png"
+            with open(image_path, "wb") as f:
+                f.write(image_bytes)
+            content.append(('image', image_path))
+    # Extract text from paragraphs
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        if text:
+            content.append(('text', text))
+    return content
+
+# Function to create PDF from content
+def create_pdf(content, pdf_path):
+    pdf = SimpleDocTemplate(pdf_path, pagesize=letter)
     styles = getSampleStyleSheet()
-    style = styles['Normal']
-    elements = [Paragraph(p.text.strip(), style) for p in doc.paragraphs if p.text.strip()]
-    doc_pdf.build(elements)
-    pdf_buffer.seek(0)
-    return pdf_buffer
-def txt_to_pdf(txt_file):
+    story = []
+    for item in content:
+        if item[0] == 'text':
+            p = Paragraph(item[1], styles['Normal'])
+            story.append(p)
+            story.append(Spacer(1, 12))
+        elif item[0] == 'image':
+            img = Image(item[1])
+            # Scale image to fit within the page width
+            img_width, img_height = img._width, img._height
+            if img_width > letter[0]:
+                ratio = letter[0] / img_width
+                img._width = letter[0]
+                img._height = img_height * ratio
+            story.append(img)
+            story.append(Spacer(1, 12))
+    pdf.build(story)
+    # Clean up temporary image files
+    for item in content:
+        if item[0] == 'image':
+            os.remove(item[1])
+
+# Main function to handle file upload and conversion
+def main():
+    # Assume 'uploaded_file' is the DOCX file from Streamlit file uploader
+    # For demonstration, use a sample DOCX file
+    uploaded_file = "sample.docx"
+    content = extract_docx_content(uploaded_file)
     pdf_buffer = io.BytesIO()
-    doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-    styles = getSampleStyleSheet()
-    style = styles['Normal']
-    content = txt_file.read().decode("utf-8").splitlines()
-    elements = [Paragraph(line.strip(), style) for line in content if line.strip()]
-    doc_pdf.build(elements)
-    pdf_buffer.seek(0)
-    return pdf_buffer
-def image_to_pdf(image_file):
-    pdf_buffer = io.BytesIO()
-    doc_pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-    img = Image(image_file, width=400, height=300)  # Ajuste as dimensões conforme necessário
-    doc_pdf.build([img])
-    pdf_buffer.seek(0)
-    return pdf_buffer
-st.title("📄 Conversor Universal para PDF")
-uploaded_file = st.file_uploader(
-    "Faça upload de um arquivo para converter em PDF:",
-    type=["docx", "txt", "jpg", "png"],
-    help="Suporte para arquivos DOCX, TXT, JPG e PNG."
-)
-if uploaded_file is not None:
-    st.info("Arquivo carregado com sucesso! Gerando PDF...")
-    try:
-        with st.spinner("Convertendo..."):
-            if uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                pdf_buffer = docx_to_pdf(uploaded_file)
-            elif uploaded_file.type == "text/plain":
-                pdf_buffer = txt_to_pdf(uploaded_file)
-            elif uploaded_file.type in ["image/jpeg", "image/png"]:
-                pdf_buffer = image_to_pdf(uploaded_file)
-            else:
-                st.error("Tipo de arquivo não suportado.")
-                st.stop()
-        st.download_button(
-            label="📥 Baixar PDF",
-            data=pdf_buffer,
-            file_name=f"{uploaded_file.name.rsplit('.', 1)[0]}.pdf",
-            mime="application/pdf"
-        )
-        st.success("PDF gerado com sucesso! Clique no botão acima para baixá-lo.")
-    except Exception as e:
-        st.error(f"Ocorreu um erro durante a conversão: {str(e)}")
+    create_pdf(content, pdf_buffer)
+    # In Streamlit, use pdf_buffer to provide the PDF for download
+    # st.download_button(...)
+
+if __name__ == "__main__":
+    main()
